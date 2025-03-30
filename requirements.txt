@@ -1,0 +1,5 @@
+Flask
+Flask-Cors
+google-generativeai
+peerjs
+gunicorn  # Required for Render hosting

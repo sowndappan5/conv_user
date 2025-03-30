@@ -50,18 +50,22 @@ button:hover {
 
 </style>
 <script>
-    const startCallButton = document.getElementById("startCall");
+const BACKEND_URL = "https://your-app.onrender.com"; // Replace with your Render backend URL
+const startCallButton = document.getElementById("startCall");
 const statusText = document.getElementById("status");
+const remoteAudio = document.getElementById("remoteAudio");
 let peer;
 let myPeerId;
 let connectedPeerId;
 
 startCallButton.addEventListener("click", async () => {
     try {
-        const response = await fetch("/get_peer_id");
+        // Get a unique Peer ID from the backend
+        const response = await fetch(`${BACKEND_URL}/get_peer_id`);
         const data = await response.json();
         myPeerId = data.peer_id;
-        
+
+        // Initialize PeerJS with the generated Peer ID
         peer = new Peer(myPeerId);
 
         peer.on("open", (id) => {
@@ -70,21 +74,23 @@ startCallButton.addEventListener("click", async () => {
         });
 
         peer.on("call", (call) => {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                call.answer(stream);
-                call.on("stream", (remoteStream) => {
-                    document.getElementById("remoteAudio").srcObject = remoteStream;
-                    statusText.innerText = "Connected!";
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((stream) => {
+                    call.answer(stream); // Answer the incoming call
+                    call.on("stream", (remoteStream) => {
+                        remoteAudio.srcObject = remoteStream;
+                        statusText.innerText = "Connected!";
+                    });
                 });
-            });
         });
     } catch (error) {
         console.error("Error:", error);
     }
 });
 
+// Function to find an available peer
 async function findPeer() {
-    const response = await fetch("/find_peer");
+    const response = await fetch(`${BACKEND_URL}/find_peer`);
     const data = await response.json();
 
     if (data.peer_id) {
@@ -95,19 +101,21 @@ async function findPeer() {
     }
 }
 
+// Function to connect to a peer and start audio call
 function connectToPeer(peerId) {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        const call = peer.call(peerId, stream);
-        call.on("stream", (remoteStream) => {
-            document.getElementById("remoteAudio").srcObject = remoteStream;
-            statusText.innerText = "Connected!";
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+            const call = peer.call(peerId, stream);
+            call.on("stream", (remoteStream) => {
+                remoteAudio.srcObject = remoteStream;
+                statusText.innerText = "Connected!";
+            });
         });
-    });
 }
 
-// Gemini AI Integration for moderation
+// Function to moderate audio using Gemini AI
 async function moderateAudio(audioText) {
-    const response = await fetch("/moderate", {
+    const response = await fetch(`${BACKEND_URL}/moderate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: audioText })
